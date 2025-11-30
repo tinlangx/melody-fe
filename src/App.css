@@ -196,7 +196,9 @@
 }
 
 .welcome-text {
-  color: #e9eef6;
+  background: linear-gradient(135deg, #ff61d2 0%, #7b5bff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 700;
   font-size: 15px;
 }
