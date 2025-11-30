@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register as registerRequest } from '../services/apiClient'
 
-const Register = () => {
+const Register = ({ onSuccess }) => {
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -23,10 +23,14 @@ const Register = () => {
     try {
       await registerRequest(form)
       setStatus('Đăng ký thành công, chuyển đến trang đăng nhập...')
-      navigate('/login', {
-        replace: true,
-        state: { fromRegister: true, registeredEmail: form.email },
-      })
+      if (onSuccess) {
+        onSuccess(form.email)
+      } else {
+        navigate('/login', {
+          replace: true,
+          state: { fromRegister: true, registeredEmail: form.email },
+        })
+      }
     } catch (err) {
       setError(err.message || 'Không thể đăng ký, vui lòng thử lại.')
     } finally {

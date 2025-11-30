@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { login as loginRequest } from '../services/apiClient'
 
-const Login = () => {
+const Login = ({ onSuccess, initialEmail = '' }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
@@ -13,10 +13,12 @@ const Login = () => {
   )
 
   useEffect(() => {
-    if (location.state?.registeredEmail) {
-      setForm((prev) => ({ ...prev, email: location.state.registeredEmail }))
+    const emailFromState = location.state?.registeredEmail
+    const email = initialEmail || emailFromState
+    if (email) {
+      setForm((prev) => ({ ...prev, email }))
     }
-  }, [location.state])
+  }, [location.state, initialEmail])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -32,7 +34,11 @@ const Login = () => {
     try {
       const data = await loginRequest(form)
       localStorage.setItem('melody_auth', JSON.stringify({ user: data.user, token: data.token }))
-      navigate('/', { replace: true })
+      if (onSuccess) {
+        onSuccess(data)
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập, vui lòng thử lại.')
     } finally {
