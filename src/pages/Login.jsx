@@ -37,10 +37,6 @@ const Login = ({ onSuccess, initialEmail = '' }) => {
       if (onSuccess) {
         onSuccess(data)
       } else {
-        sessionStorage.setItem(
-          'melody_login_success',
-          JSON.stringify({ name: data.user.name, email: data.user.email })
-        )
         navigate('/', { replace: true })
       }
     } catch (err) {

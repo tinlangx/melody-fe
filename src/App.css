@@ -192,6 +192,13 @@
 .top-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+
+.welcome-text {
+  color: #e9eef6;
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .pill-btn {

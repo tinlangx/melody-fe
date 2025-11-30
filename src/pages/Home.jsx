@@ -356,7 +356,6 @@ const Home = () => {
   const [modal, setModal] = useState(null) // 'login' | 'register' | null
   const [prefillEmail, setPrefillEmail] = useState('')
   const [authUser, setAuthUser] = useState(null)
-  const [successMessage, setSuccessMessage] = useState('')
 
   const hero = heroSlides[0]
 
@@ -372,21 +371,11 @@ const Home = () => {
     }
 
     try {
-      const pendingNotice = sessionStorage.getItem('melody_login_success')
-      if (pendingNotice) {
-        setSuccessMessage('Đăng nhập thành công!')
-        sessionStorage.removeItem('melody_login_success')
-      }
+      sessionStorage.removeItem('melody_login_success')
     } catch (err) {
       // ignore
     }
   }, [])
-
-  useEffect(() => {
-    if (!successMessage) return
-    const timer = setTimeout(() => setSuccessMessage(''), 2000)
-    return () => clearTimeout(timer)
-  }, [successMessage])
 
   const closeModal = () => setModal(null)
 
@@ -397,14 +386,12 @@ const Home = () => {
 
   const handleLoginSuccess = (data) => {
     setAuthUser(data?.user || null)
-    setSuccessMessage('Đăng nhập thành công!')
     setModal(null)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('melody_auth')
     setAuthUser(null)
-    setSuccessMessage('')
   }
 
   return (
@@ -412,7 +399,6 @@ const Home = () => {
       <Sidebar />
 
       <section className="home-main">
-        {successMessage && <div className="banner success">{successMessage}</div>}
         <div className="home-topbar">
           <input className="search" placeholder="Search for musics, artists, albums..." />
           <nav className="top-links">
