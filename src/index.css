@@ -1,0 +1,35 @@
+:root {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #e9eef6;
+  background-color: #050b18;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, rgba(124, 215, 255, 0.08), transparent 25%),
+    radial-gradient(circle at 80% 0%, rgba(255, 207, 86, 0.08), transparent 22%),
+    linear-gradient(135deg, #070f1f 0%, #0b1528 50%, #050b18 100%);
+}
+
+a {
+  color: #7cd7ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+a:hover {
+  color: #b0e8ff;
+}
