@@ -374,15 +374,19 @@ const Home = () => {
     try {
       const pendingNotice = sessionStorage.getItem('melody_login_success')
       if (pendingNotice) {
-        const parsed = JSON.parse(pendingNotice)
-        const name = parsed?.name || parsed?.email
-        if (name) setSuccessMessage(`Đăng nhập thành công! Welcome ${name}.`)
+        setSuccessMessage('Đăng nhập thành công!')
         sessionStorage.removeItem('melody_login_success')
       }
     } catch (err) {
       // ignore
     }
   }, [])
+
+  useEffect(() => {
+    if (!successMessage) return
+    const timer = setTimeout(() => setSuccessMessage(''), 2000)
+    return () => clearTimeout(timer)
+  }, [successMessage])
 
   const closeModal = () => setModal(null)
 
@@ -392,9 +396,8 @@ const Home = () => {
   }
 
   const handleLoginSuccess = (data) => {
-    const name = data?.user?.name || data?.user?.email || 'user'
     setAuthUser(data?.user || null)
-    setSuccessMessage(`Đăng nhập thành công! Welcome ${name}.`)
+    setSuccessMessage('Đăng nhập thành công!')
     setModal(null)
   }
 
