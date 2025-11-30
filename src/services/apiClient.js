@@ -4,11 +4,13 @@ const normalizeBaseUrl = (rawBase) => {
 };
 
 const browserApiUrl = typeof window !== 'undefined' ? window.__MELODY_API_URL__ : undefined;
+const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
+const isDeployedHost = browserHost && browserHost.includes('vercel.app');
 
 const API_BASE_URL =
   normalizeBaseUrl(import.meta.env.VITE_API_URL) ||
   normalizeBaseUrl(browserApiUrl) ||
-  'http://localhost:4000';
+  (isDeployedHost ? 'https://melody-be-fawn.vercel.app' : 'http://localhost:4000');
 
 const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
