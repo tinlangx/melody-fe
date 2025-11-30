@@ -1,19 +1,43 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { login as loginRequest } from '../services/apiClient'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState(
+    location.state?.fromRegister ? 'Đăng ký thành công, hãy đăng nhập.' : ''
+  )
+
+  useEffect(() => {
+    if (location.state?.registeredEmail) {
+      setForm((prev) => ({ ...prev, email: location.state.registeredEmail }))
+    }
+  }, [location.state])
 
   const handleChange = (event) => {
     const { name, value } = event.target
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    // Giả lập đăng nhập thành công và chuyển đến trang Home
-    navigate('/', { replace: true })
+    setError('')
+    setStatus('')
+    setLoading(true)
+
+    try {
+      const data = await loginRequest(form)
+      localStorage.setItem('melody_auth', JSON.stringify({ user: data.user, token: data.token }))
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(err.message || 'Không thể đăng nhập, vui lòng thử lại.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -32,6 +56,8 @@ const Login = () => {
             value={form.email}
             onChange={handleChange}
             placeholder="you@example.com"
+            autoComplete="email"
+            disabled={loading}
             required
           />
         </label>
@@ -43,12 +69,16 @@ const Login = () => {
             value={form.password}
             onChange={handleChange}
             placeholder="••••••••"
+            autoComplete="current-password"
+            disabled={loading}
             required
           />
         </label>
-        <button type="submit" className="primary-button">
-          Đăng nhập
+        <button type="submit" className="primary-button" disabled={loading}>
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
+        {error && <p className="status error">{error}</p>}
+        {status && !error && <p className="status success">{status}</p>}
         <p className="helper-text">
           Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
         </p>

@@ -176,9 +176,34 @@
   transform: translateY(0);
 }
 
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .helper-text {
   margin: 0;
   color: #a7b6cf;
+}
+
+.status {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.status.error {
+  color: #ffc2d4;
+  background: rgba(255, 87, 87, 0.08);
+  border: 1px solid rgba(255, 87, 87, 0.3);
+}
+
+.status.success {
+  color: #b4ffe4;
+  background: rgba(0, 200, 150, 0.1);
+  border: 1px solid rgba(0, 200, 150, 0.3);
 }
 
 @media (max-width: 640px) {
