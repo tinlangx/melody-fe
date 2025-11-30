@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Login from './Login'
 import Register from './Register'
 
@@ -355,8 +355,34 @@ const ListTable = ({ rows }) => (
 const Home = () => {
   const [modal, setModal] = useState(null) // 'login' | 'register' | null
   const [prefillEmail, setPrefillEmail] = useState('')
+  const [authUser, setAuthUser] = useState(null)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const hero = heroSlides[0]
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('melody_auth')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed?.user) setAuthUser(parsed.user)
+      }
+    } catch (err) {
+      setAuthUser(null)
+    }
+
+    try {
+      const pendingNotice = sessionStorage.getItem('melody_login_success')
+      if (pendingNotice) {
+        const parsed = JSON.parse(pendingNotice)
+        const name = parsed?.name || parsed?.email
+        if (name) setSuccessMessage(`Đăng nhập thành công! Welcome ${name}.`)
+        sessionStorage.removeItem('melody_login_success')
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, [])
 
   const closeModal = () => setModal(null)
 
@@ -365,8 +391,17 @@ const Home = () => {
     setModal('login')
   }
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (data) => {
+    const name = data?.user?.name || data?.user?.email || 'user'
+    setAuthUser(data?.user || null)
+    setSuccessMessage(`Đăng nhập thành công! Welcome ${name}.`)
     setModal(null)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('melody_auth')
+    setAuthUser(null)
+    setSuccessMessage('')
   }
 
   return (
@@ -374,6 +409,7 @@ const Home = () => {
       <Sidebar />
 
       <section className="home-main">
+        {successMessage && <div className="banner success">{successMessage}</div>}
         <div className="home-topbar">
           <input className="search" placeholder="Search for musics, artists, albums..." />
           <nav className="top-links">
@@ -384,12 +420,25 @@ const Home = () => {
             ))}
           </nav>
           <div className="top-actions">
-            <button className="ghost-btn" type="button" onClick={() => setModal('login')}>
-              Login
-            </button>
-            <button className="pill-btn" type="button" onClick={() => setModal('register')}>
-              Sign Up
-            </button>
+            {authUser ? (
+              <>
+                <span className="welcome-text">
+                  Welcome, {authUser.name || authUser.email || 'user'}
+                </span>
+                <button className="ghost-btn" type="button" onClick={handleLogout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="ghost-btn" type="button" onClick={() => setModal('login')}>
+                  Login
+                </button>
+                <button className="pill-btn" type="button" onClick={() => setModal('register')}>
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
 
