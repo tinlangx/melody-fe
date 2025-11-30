@@ -5,7 +5,7 @@ Frontend React + Vite cho Melody. Đã cấu hình để gọi API của backend
 ## Chạy local
 
 ```bash
-cp .env.example .env            # set VITE_API_URL nếu backend không chạy ở http://localhost:4000
+cp .env.example .env            # mặc định trỏ tới backend vercel; đổi VITE_API_URL nếu chạy local
 npm install
 npm run dev
 ```
