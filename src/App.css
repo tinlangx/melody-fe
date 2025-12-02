@@ -5,7 +5,7 @@
 .app-shell {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 24px 16px 24px;
 }
 
 .top-bar {
@@ -97,6 +97,8 @@
   display: grid;
   grid-template-columns: 250px 1fr;
   gap: 18px;
+  min-height: 100vh;
+  align-items: start;
 }
 
 .home-sidebar {
@@ -108,8 +110,8 @@
   flex-direction: column;
   gap: 16px;
   position: sticky;
-  top: 16px;
-  height: fit-content;
+  top: 24px;
+  height: calc(100vh - 48px);
 }
 
 .sidebar-logo {
@@ -615,6 +617,8 @@
   .home-sidebar {
     position: relative;
     top: auto;
+    height: auto;
+    min-height: auto;
   }
 
   .home-topbar {
