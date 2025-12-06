@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { login as loginRequest } from '../services/apiClient'
 
-const Login = ({ onSuccess, initialEmail = '' }) => {
+const Login = ({ onSuccess, initialEmail = '', onSwitchToRegister }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
@@ -19,6 +19,17 @@ const Login = ({ onSuccess, initialEmail = '' }) => {
       setForm((prev) => ({ ...prev, email }))
     }
   }, [location.state, initialEmail])
+
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return '/admin'
+      case 'ARTIST':
+        return '/artist/dashboard'
+      default:
+        return '/'
+    }
+  }
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -37,7 +48,8 @@ const Login = ({ onSuccess, initialEmail = '' }) => {
       if (onSuccess) {
         onSuccess(data)
       } else {
-        navigate('/', { replace: true })
+        const redirect = getRedirectPath(data?.user?.role)
+        navigate(redirect, { replace: true })
       }
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập, vui lòng thử lại.')
@@ -86,7 +98,20 @@ const Login = ({ onSuccess, initialEmail = '' }) => {
         {error && <p className="status error">{error}</p>}
         {status && !error && <p className="status success">{status}</p>}
         <p className="helper-text">
-          Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
+          Chưa có tài khoản?{' '}
+          {onSwitchToRegister ? (
+            <button
+              type="button"
+              className="ghost-btn"
+              style={{ padding: 0, border: 'none' }}
+              onClick={onSwitchToRegister}
+              disabled={loading}
+            >
+              Đăng ký
+            </button>
+          ) : (
+            <Link to="/register">Đăng ký</Link>
+          )}
         </p>
       </form>
     </section>

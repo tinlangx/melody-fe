@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register as registerRequest } from '../services/apiClient'
 
-const Register = ({ onSuccess }) => {
+const Register = ({ onSuccess, onSwitchToLogin }) => {
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -91,7 +91,20 @@ const Register = ({ onSuccess }) => {
         {error && <p className="status error">{error}</p>}
         {status && !error && <p className="status success">{status}</p>}
         <p className="helper-text">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+          Đã có tài khoản?{' '}
+          {onSwitchToLogin ? (
+            <button
+              type="button"
+              className="ghost-btn"
+              style={{ padding: 0, border: 'none' }}
+              onClick={onSwitchToLogin}
+              disabled={loading}
+            >
+              Đăng nhập
+            </button>
+          ) : (
+            <Link to="/login">Đăng nhập</Link>
+          )}
         </p>
       </form>
     </section>

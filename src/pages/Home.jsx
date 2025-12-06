@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Login from './Login'
 import Register from './Register'
+import { listAllAlbums, listPublicSongsLimited } from '../services/apiClient'
+import { usePlayer } from '../context/PlayerContext'
+import HomeTopBar from '../components/HomeTopBar'
 
 const heroSlides = [
   {
@@ -256,16 +259,21 @@ const playlists = [
   },
 ]
 
-const Sidebar = () => (
+const Sidebar = ({ activeMenu, onSelect }) => (
   <aside className="home-sidebar">
     <div className="sidebar-logo">Melodies</div>
     <div className="sidebar-section">
       <p className="sidebar-label">Menu</p>
       <nav>
         {['Home', 'Discover', 'Albums', 'Artists'].map((item) => (
-          <a key={item} className={`sidebar-link ${item === 'Home' ? 'active' : ''}`} href="#">
+          <button
+            key={item}
+            className={`sidebar-link sidebar-link-btn ${activeMenu === item ? 'active' : ''}`}
+            type="button"
+            onClick={() => onSelect(item)}
+          >
             {item}
-          </a>
+          </button>
         ))}
       </nav>
     </div>
@@ -356,10 +364,28 @@ const Home = () => {
   const [modal, setModal] = useState(null) // 'login' | 'register' | null
   const [prefillEmail, setPrefillEmail] = useState('')
   const [authUser, setAuthUser] = useState(null)
+  const [activeMenu, setActiveMenu] = useState('Home')
+  const [allAlbums, setAllAlbums] = useState([])
+  const [albumsLoading, setAlbumsLoading] = useState(false)
+  const [albumsError, setAlbumsError] = useState('')
+  const [newReleaseSongs, setNewReleaseSongs] = useState([])
+  const [newReleaseError, setNewReleaseError] = useState('')
+  const navigate = useNavigate()
+  const { playSong } = usePlayer()
 
   const hero = heroSlides[0]
 
   useEffect(() => {
+    const fetchNewRelease = async () => {
+      try {
+        const res = await listPublicSongsLimited(6)
+        setNewReleaseSongs(res.songs || [])
+      } catch (err) {
+        setNewReleaseError(err.message || 'Không thể tải bài hát mới.')
+      }
+    }
+    fetchNewRelease()
+
     try {
       const saved = localStorage.getItem('melody_auth')
       if (saved) {
@@ -384,9 +410,22 @@ const Home = () => {
     setModal('login')
   }
 
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return '/admin'
+      case 'ARTIST':
+        return '/artist/dashboard'
+      default:
+        return '/'
+    }
+  }
+
   const handleLoginSuccess = (data) => {
     setAuthUser(data?.user || null)
     setModal(null)
+    const redirect = getRedirectPath(data?.user?.role)
+    navigate(redirect, { replace: true })
   }
 
   const handleLogout = () => {
@@ -394,97 +433,137 @@ const Home = () => {
     setAuthUser(null)
   }
 
+  const handleMenuSelect = (item) => {
+    setActiveMenu(item)
+    if (item === 'Albums') {
+      fetchAllAlbums()
+      // scroll to top of content
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }
+
+  const fetchAllAlbums = async () => {
+    if (albumsLoading || allAlbums.length) return
+    setAlbumsLoading(true)
+    setAlbumsError('')
+    try {
+      const res = await listAllAlbums()
+      setAllAlbums(res.albums || [])
+    } catch (err) {
+      setAlbumsError(err.message || 'Không thể tải danh sách album.')
+    } finally {
+      setAlbumsLoading(false)
+    }
+  }
+
   return (
     <div className="home-page">
-      <Sidebar />
+      <Sidebar activeMenu={activeMenu} onSelect={handleMenuSelect} />
 
       <section className="home-main">
-        <div className="home-topbar">
-          <input className="search" placeholder="Search for musics, artists, albums..." />
-          <nav className="top-links">
-            {['About', 'Contact', 'Premium'].map((link) => (
-              <a key={link} href="#">
-                {link}
-              </a>
-            ))}
-          </nav>
-          <div className="top-actions">
-            {authUser ? (
-              <>
-                <span className="welcome-text">
-                  Welcome, {authUser.name || authUser.email || 'user'}
-                </span>
-                <button className="ghost-btn" type="button" onClick={handleLogout}>
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <button className="ghost-btn" type="button" onClick={() => setModal('login')}>
-                  Login
-                </button>
-                <button className="pill-btn" type="button" onClick={() => setModal('register')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        <HomeTopBar
+          authUser={authUser}
+          onLogout={handleLogout}
+          onOpenLogin={() => setModal('login')}
+          onOpenRegister={() => setModal('register')}
+        />
 
-        <div className="hero">
-          <div className="hero-info">
-            <p className="eyebrow">Featured</p>
-            <h1>{hero.title}</h1>
-            <p className="subtitle">{hero.description}</p>
-            <div className="hero-actions">
-              <button className="pill-btn">Listen Now</button>
-              <button className="ghost-btn">Follow</button>
+        {activeMenu === 'Albums' ? (
+          <div className="home-content-panel">
+            <div className="section">
+              <SectionHeader title="Tất cả" accent="Albums" />
+              {albumsLoading && <p className="helper-text">Đang tải album...</p>}
+              {albumsError && <p className="status error">{albumsError}</p>}
+              <div className="album-grid">
+                {allAlbums.map((album) => (
+                  <article key={album._id} className="album-card">
+                    <span className="album-status">{album.status || 'published'}</span>
+                    <h3 style={{ margin: '0 0 6px' }}>{album.title}</h3>
+                    <p className="album-meta">
+                      {album.uploadedBy?.name || album.uploadedBy?.email || 'Artist'}
+                    </p>
+                    {album.description && <p className="album-meta">{album.description}</p>}
+                    <div className="album-meta">
+                      Bài hát: {Array.isArray(album.songs) ? album.songs.length : 0}
+                    </div>
+                    {Array.isArray(album.songs) && album.songs.length > 0 && (
+                      <div className="album-song-list">
+                        {album.songs.slice(0, 3).map((s) => {
+                          if (!s) return null
+                          const title = typeof s === 'object' ? s.title || s._id : s
+                          return (
+                            <div key={title} className="album-song-pill">
+                              {title}
+                            </div>
+                          )
+                        })}
+                        {album.songs.length > 3 && (
+                          <small className="album-meta">+{album.songs.length - 3} bài khác</small>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                ))}
+                {!allAlbums.length && !albumsLoading && !albumsError && (
+                  <p className="helper-text">Chưa có album nào.</p>
+                )}
+              </div>
             </div>
           </div>
-          <div
-            className="hero-cover"
-            style={{ backgroundImage: `url(${hero.image})` }}
-            role="presentation"
-          />
-        </div>
+        ) : (
+          <div className="home-content-panel">
+            <div className="hero">
+              <div className="hero-info">
+                <p className="eyebrow">Featured</p>
+                <h1>{hero.title}</h1>
+                <p className="subtitle">{hero.description}</p>
+                <div className="hero-actions">
+                  <button className="pill-btn">Listen Now</button>
+                  <button className="ghost-btn">Follow</button>
+                </div>
+              </div>
+              <div
+                className="hero-cover"
+                style={{ backgroundImage: `url(${hero.image})` }}
+                role="presentation"
+              />
+            </div>
 
-        <div className="section">
-          <SectionHeader title="Weekly Top" accent="Songs" action />
-          <CardGrid items={weeklyTop} />
-        </div>
+            <div className="section">
+              <SectionHeader title="Weekly Top" accent="Songs" action />
+              <CardGrid items={weeklyTop} />
+            </div>
 
         <div className="section">
           <SectionHeader title="New Release" accent="Songs" action />
-          <CardGrid items={newRelease} />
-        </div>
-
-        <div className="section">
-          <SectionHeader title="Trending" accent="Songs" />
-          <ListTable rows={trending} />
-        </div>
-
-        <div className="section">
-          <SectionHeader title="Popular" accent="Artists" action />
-          <div className="avatar-row">
-            {artists.map((artist) => (
-              <div key={artist.name} className="avatar">
-                <div className="avatar-img" style={{ backgroundImage: `url(${artist.photo})` }} />
-                <p>{artist.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="section">
-          <SectionHeader title="Music" accent="Video" action />
+          {newReleaseError && <p className="status error">{newReleaseError}</p>}
           <div className="card-grid">
-            {videos.map((item) => (
-              <article key={item.title} className="music-card">
-                <div className="music-cover" style={{ backgroundImage: `url(${item.cover})` }} />
+            {(newReleaseSongs.length ? newReleaseSongs : newRelease).map((item) => (
+              <article
+                key={item.title || item._id}
+                className="music-card"
+                onClick={() => {
+                  if (item._id && item.url) {
+                    playSong(item, newReleaseSongs)
+                  }
+                }}
+                style={{ cursor: item._id ? 'pointer' : 'default' }}
+              >
+                <div
+                  className="music-cover"
+                  style={{
+                    backgroundImage: `url(${
+                      item.cover ||
+                      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80'
+                    })`,
+                  }}
+                />
                 <div className="music-meta">
-                  <p className="music-title">{item.title}</p>
+                  <p className="music-title marquee">
+                    <span>{item.title}</span>
+                  </p>
                   <p className="music-artist">
-                    {item.artist} • {item.views}
+                    {item.artist || item.uploadedBy?.name || item.uploadedBy?.email || ''}
                   </p>
                 </div>
               </article>
@@ -492,73 +571,109 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="section">
-          <SectionHeader title="Top" accent="Albums" action />
-          <CardGrid items={albums} />
-        </div>
+            <div className="section">
+              <SectionHeader title="Trending" accent="Songs" />
+              <ListTable rows={trending} />
+            </div>
 
-        <div className="section">
-          <SectionHeader title="Mood" accent="Playlists" action />
-          <div className="card-grid">
-            {playlists.map((item) => (
-              <article key={item.title} className="music-card">
-                <div className="music-cover" style={{ backgroundImage: `url(${item.cover})` }} />
-                <div className="music-meta">
-                  <p className="music-title">{item.title}</p>
-                  <p className="music-artist">Curated</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
+            <div className="section">
+              <SectionHeader title="Popular" accent="Artists" action />
+              <div className="avatar-row">
+                {artists.map((artist) => (
+                  <div key={artist.name} className="avatar">
+                    <div className="avatar-img" style={{ backgroundImage: `url(${artist.photo})` }} />
+                    <p>{artist.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        <div className="cta-block">
-          <div>
-            <p className="eyebrow">Join Our Platform</p>
-            <h2>Stream more of what you love</h2>
-            <p className="subtitle">
-              Become a member to unlock full tracks, playlists, and exclusive drops from your
-              favorite artists.
-            </p>
-          </div>
-          <div className="cta-actions">
-            <button className="pill-btn" type="button" onClick={() => setModal('register')}>
-              Sign Up
-            </button>
-            <button className="ghost-btn" type="button" onClick={() => setModal('login')}>
-              Login
-            </button>
-          </div>
-        </div>
+            <div className="section">
+              <SectionHeader title="Music" accent="Video" action />
+              <div className="card-grid">
+                {videos.map((item) => (
+                  <article key={item.title} className="music-card">
+                    <div className="music-cover" style={{ backgroundImage: `url(${item.cover})` }} />
+                    <div className="music-meta">
+                      <p className="music-title">{item.title}</p>
+                      <p className="music-artist">
+                        {item.artist} • {item.views}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
 
-        <footer className="footer">
-          <div>
-            <h4>About</h4>
-            <p>
-              Melodies là website nghe nhạc với bộ sưu tập đa dạng và playlist theo mood. Luôn cập
-              nhật bản hit mới nhất.
-            </p>
+            <div className="section">
+              <SectionHeader title="Top" accent="Albums" action />
+              <CardGrid items={albums} />
+            </div>
+
+            <div className="section">
+              <SectionHeader title="Mood" accent="Playlists" action />
+              <div className="card-grid">
+                {playlists.map((item) => (
+                  <article key={item.title} className="music-card">
+                    <div className="music-cover" style={{ backgroundImage: `url(${item.cover})` }} />
+                    <div className="music-meta">
+                      <p className="music-title">{item.title}</p>
+                      <p className="music-artist">Curated</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="cta-block">
+              <div>
+                <p className="eyebrow">Join Our Platform</p>
+                <h2>Stream more of what you love</h2>
+                <p className="subtitle">
+                  Become a member to unlock full tracks, playlists, and exclusive drops from your
+                  favorite artists.
+                </p>
+              </div>
+              <div className="cta-actions">
+                <button className="pill-btn" type="button" onClick={() => setModal('register')}>
+                  Sign Up
+                </button>
+                <button className="ghost-btn" type="button" onClick={() => setModal('login')}>
+                  Login
+                </button>
+              </div>
+            </div>
+
+            <footer className="footer">
+              <div>
+                <h4>About</h4>
+                <p>
+                  Melodies là website nghe nhạc với bộ sưu tập đa dạng và playlist theo mood. Luôn cập
+                  nhật bản hit mới nhất.
+                </p>
+              </div>
+              <div>
+                <h4>Melodi</h4>
+                <p>Songs</p>
+                <p>Radio</p>
+                <p>Podcast</p>
+              </div>
+              <div>
+                <h4>Access</h4>
+                <p>Explore</p>
+                <p>Artists</p>
+                <p>Albums</p>
+                <p>Trending</p>
+              </div>
+              <div>
+                <h4>Contact</h4>
+                <p>Policy</p>
+                <p>Social Media</p>
+                <p>Support</p>
+              </div>
+            </footer>
           </div>
-          <div>
-            <h4>Melodi</h4>
-            <p>Songs</p>
-            <p>Radio</p>
-            <p>Podcast</p>
-          </div>
-          <div>
-            <h4>Access</h4>
-            <p>Explore</p>
-            <p>Artists</p>
-            <p>Albums</p>
-            <p>Trending</p>
-          </div>
-          <div>
-            <h4>Contact</h4>
-            <p>Policy</p>
-            <p>Social Media</p>
-            <p>Support</p>
-          </div>
-        </footer>
+        )}
       </section>
 
       {modal && (
@@ -568,9 +683,16 @@ const Home = () => {
               ×
             </button>
             {modal === 'login' ? (
-              <Login onSuccess={handleLoginSuccess} initialEmail={prefillEmail} />
+              <Login
+                onSuccess={handleLoginSuccess}
+                initialEmail={prefillEmail}
+                onSwitchToRegister={() => setModal('register')}
+              />
             ) : (
-              <Register onSuccess={handleRegisterSuccess} />
+              <Register
+                onSuccess={handleRegisterSuccess}
+                onSwitchToLogin={() => setModal('login')}
+              />
             )}
           </div>
         </div>
