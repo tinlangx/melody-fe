@@ -55,6 +55,42 @@ export const demoteToListener = (userId, token) =>
     headers: { Authorization: `Bearer ${token}` },
   });
 
+export const listUsers = (token) =>
+  request('/api/admin/users', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteUserAdmin = (userId, token) =>
+  request(`/api/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const listSongsAdmin = (token) =>
+  request('/api/admin/songs', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteSongAdmin = (id, token) =>
+  request(`/api/admin/songs/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const listAlbumsAdmin = (token) =>
+  request('/api/admin/albums', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteAlbumAdmin = (id, token) =>
+  request(`/api/admin/albums/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
 export const getUploadSignature = (token, payload = {}) =>
   request('/api/uploads/signature', {
     method: 'POST',
@@ -157,6 +193,60 @@ export const listMyPlaylists = (token) =>
 
 export const deletePlaylist = (id, token) =>
   request(`/api/artists/playlists/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+// Listener - playlists (private)
+export const createListenerPlaylist = (data, token) =>
+  request('/api/listeners/playlists', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+
+export const listListenerPlaylists = (token) =>
+  request('/api/listeners/playlists', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteListenerPlaylist = (id, token) =>
+  request(`/api/listeners/playlists/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const addSongToListenerPlaylist = (playlistId, songId, token) =>
+  request(`/api/listeners/playlists/${playlistId}/add-song`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ songId }),
+  });
+
+export const removeSongFromListenerPlaylist = (playlistId, songId, token) =>
+  request(`/api/listeners/playlists/${playlistId}/remove-song`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ songId }),
+  });
+
+// Favorites
+export const listFavorites = (token) =>
+  request('/api/listeners/favorites', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const addFavorite = (songId, token) =>
+  request('/api/listeners/favorites', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ songId }),
+  });
+
+export const removeFavorite = (songId, token) =>
+  request(`/api/listeners/favorites/${songId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });

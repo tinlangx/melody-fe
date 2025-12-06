@@ -86,12 +86,14 @@ const ArtistDashboard = () => {
   const [supports, setSupports] = useState([])
   const [listenLikeStats, setListenLikeStats] = useState(null)
   const [albumForm, setAlbumForm] = useState({ title: '', description: '', coverUrl: '' })
+  const [albumCoverFile, setAlbumCoverFile] = useState(null)
   const [songForm, setSongForm] = useState({
     title: '',
     description: '',
     folder: 'melody-media/audio',
   })
   const [songFile, setSongFile] = useState(null)
+  const [songCoverFile, setSongCoverFile] = useState(null)
   const [playlistForm, setPlaylistForm] = useState({ title: '', description: '', coverUrl: '' })
   const [promotionForm, setPromotionForm] = useState({
     title: '',
@@ -102,6 +104,7 @@ const ArtistDashboard = () => {
     appliesToAlbums: '',
   })
   const [supportForm, setSupportForm] = useState({ title: '', message: '' })
+  const [playlistCoverFile, setPlaylistCoverFile] = useState(null)
   const [albumSongSelection, setAlbumSongSelection] = useState({})
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -165,16 +168,26 @@ const ArtistDashboard = () => {
     setStatus('')
     setError('')
     try {
+      let coverUrl = albumForm.coverUrl
+      if (albumCoverFile) {
+        const sig = await getUploadSignature(token, {
+          folder: 'melody-media/covers',
+          resource_type: 'image',
+        })
+        const up = await uploadToCloudinary(albumCoverFile, sig)
+        coverUrl = up.secure_url
+      }
       const payload = {
         title: albumForm.title.trim(),
         description: albumForm.description,
-        coverUrl: albumForm.coverUrl,
+        coverUrl,
       }
       if (import.meta.env.DEV) console.log('Album payload -> backend', payload)
       await createAlbum(payload, token)
       setStatus('Đã tạo album.')
       showToast('success', 'Đã tạo album.')
       setAlbumForm({ title: '', description: '', coverUrl: '' })
+      setAlbumCoverFile(null)
       fetchAll()
     } catch (err) {
       setError(err.message || 'Không thể tạo album.')
@@ -192,6 +205,16 @@ const ArtistDashboard = () => {
     setStatus('')
     setError('')
     try {
+      let coverUrl = ''
+      if (songCoverFile) {
+        const sigCover = await getUploadSignature(token, {
+          folder: 'melody-media/covers',
+          resource_type: 'image',
+        })
+        const coverUpload = await uploadToCloudinary(songCoverFile, sigCover)
+        coverUrl = coverUpload.secure_url
+      }
+
       const sig = await getUploadSignature(token, {
         folder: songForm.folder || 'melody-media/audio',
         resource_type: 'auto',
@@ -210,7 +233,8 @@ const ArtistDashboard = () => {
         format: uploadRes.format,
         bytes: uploadRes.bytes,
         duration: uploadRes.duration,
-        thumbnail: uploadRes.thumbnail_url,
+        thumbnail: coverUrl || uploadRes.thumbnail_url,
+        coverUrl: coverUrl || undefined,
       }
       if (import.meta.env.DEV) {
         console.log('Song payload -> backend', payload)
@@ -224,6 +248,7 @@ const ArtistDashboard = () => {
         description: '',
       }))
       setSongFile(null)
+      setSongCoverFile(null)
       fetchAll()
     } catch (err) {
       setError(err.message || 'Không thể upload bài hát.')
@@ -325,9 +350,19 @@ const ArtistDashboard = () => {
     setError('')
     setStatus('')
     try {
-      await createPlaylist(playlistForm, token)
+      let coverUrl = playlistForm.coverUrl
+      if (playlistCoverFile) {
+        const sig = await getUploadSignature(token, {
+          folder: 'melody-media/covers',
+          resource_type: 'image',
+        })
+        const up = await uploadToCloudinary(playlistCoverFile, sig)
+        coverUrl = up.secure_url
+      }
+      await createPlaylist({ ...playlistForm, coverUrl }, token)
       setStatus('Đã tạo playlist.')
       setPlaylistForm({ title: '', description: '', coverUrl: '' })
+      setPlaylistCoverFile(null)
       fetchAll()
     } catch (err) {
       setError(err.message || 'Không thể tạo playlist.')
@@ -494,6 +529,15 @@ const ArtistDashboard = () => {
             />
           </label>
           <label className="field">
+            <span>Cover (ảnh, tùy chọn)</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setSongCoverFile(e.target.files?.[0] || null)}
+              disabled={loading || !isArtist}
+            />
+          </label>
+          <label className="field">
             <span>Folder Cloudinary</span>
             <input
               type="text"
@@ -547,13 +591,16 @@ const ArtistDashboard = () => {
             />
           </label>
           <label className="field">
-            <span>Cover URL</span>
+            <span>Cover (ảnh)</span>
             <input
-              type="url"
-              value={albumForm.coverUrl}
-              onChange={(e) => setAlbumForm((p) => ({ ...p, coverUrl: e.target.value }))}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAlbumCoverFile(e.target.files?.[0] || null)}
               disabled={loading || !isArtist}
             />
+            {albumForm.coverUrl && (
+              <small className="helper-text">Đang dùng cover: {albumForm.coverUrl}</small>
+            )}
           </label>
           <button className="primary-button" type="submit" disabled={loading || !isArtist}>
             {loading ? 'Đang lưu...' : 'Tạo album'}
@@ -695,13 +742,16 @@ const ArtistDashboard = () => {
             />
           </label>
           <label className="field">
-            <span>Cover URL</span>
+            <span>Cover (ảnh)</span>
             <input
-              type="url"
-              value={playlistForm.coverUrl}
-              onChange={(e) => setPlaylistForm((p) => ({ ...p, coverUrl: e.target.value }))}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setPlaylistCoverFile(e.target.files?.[0] || null)}
               disabled={loading || !isArtist}
             />
+            {playlistForm.coverUrl && (
+              <small className="helper-text">Đang dùng cover: {playlistForm.coverUrl}</small>
+            )}
           </label>
           <button className="primary-button" type="submit" disabled={loading || !isArtist}>
             {loading ? 'Đang lưu...' : 'Tạo playlist'}

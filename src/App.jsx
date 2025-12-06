@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { PlayerProvider } from './context/PlayerContext'
 import PlayerBar from './components/PlayerBar'
+import PlayerModal from './components/PlayerModal'
 
 const ScrollToTop = () => {
   const { pathname } = useLocation()
@@ -43,6 +44,7 @@ function App() {
           <Route path="/player" element={<Player />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <PlayerModal />
         <PlayerBar />
       </PageLayout>
     </PlayerProvider>
